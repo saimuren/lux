@@ -1,37 +1,28 @@
-
-use rustler::{Atom, Encoder, Env, Term, NifResult};
-use serde_json::Value;
+use rustler::{Atom, Env, Term, NifResult, Encoder};
+use serde::{Deserialize, Serialize};
 
 mod atoms {
     rustler::atoms! {
         ok,
-        error
+        error,
     }
 }
 
-pub trait LuxComponent {
-    fn handler(&self, input: Value, context: Value) -> Result<Value, String>;
-    fn view(&self) -> Value {
-        Value::Null
-    }
+#[derive(Serialize, Deserialize)]
+struct RustComponent {
+    id: String,
+    status: String,
 }
 
 #[rustler::nif]
-fn call_handler(input_json: String, context_json: String) -> NifResult<String> {
-    let input: Value = serde_json::from_str(&input_json).map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
-    let context: Value = serde_json::from_str(&context_json).map_err(|e| rustler::Error::Term(Box::new(e.to_string())))?;
-    
-    // Dispatch logic: In a production environment, this would route to specific trait implementations.
-    // For this bounty, we are providing the infrastructure for native components.
-    let result = serde_json::json!({
-        "status": "success",
-        "data": {
-            "processed": input,
-            "origin": "rust"
-        }
-    });
-    
-    Ok(serde_json::to_string(&result).unwrap())
+fn handle_request(env: Env, json_payload: String) -> NifResult<Term> {
+    let component: RustComponent = match serde_json::from_str(&json_payload) {
+        Ok(c) => c,
+        Err(_) => return Ok((atoms::error(), "Invalid JSON").encode(env)),
+    };
+
+    let result = format!("Processed: {}", component.id);
+    Ok((atoms::ok(), result).encode(env))
 }
 
-rustler::init!("Elixir.Lux.Rust", [call_handler]);
+rustler::init!("Elixir.Lux.Rust", [handle_request]);
