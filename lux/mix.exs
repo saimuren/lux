@@ -86,6 +86,7 @@ defmodule Lux.MixProject do
       {:stream_data, "~> 1.0", only: [:test]},
       {:styler, "~> 1.3", only: [:dev, :test], runtime: false},
       {:excoveralls, "~> 0.18", only: :test},
+      {:jason, "~> 1.4"},
       {:rustler, "~> 0.35.0"}
     ]
   end
